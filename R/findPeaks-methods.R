@@ -1,282 +1,281 @@
 
+## findPeaks-methods
+## 
+## 
+###############################################################################
+##' @name findPeaks 
+##' @aliases findPeaks
 ##' @title findPeaks
-##' @name findPeaks
-##' @description 
-##' find reads enriched regions. 
-##' @details poission distribution test
-
+##' @rdname findPeaks-method
+##' @docType methods 
+##' @description Find reads enriched regions using poission distribution model.
+##' @usage  findPeaks(bamFile.chip)
+##' @param bamFie.chip Full path to chip bam file.
+##' @param bamFile.control Full path to control bam file.
+##' @param obj.chip SeqData object containing information on chip.
+##' @param obj.control SeqData object containing information on control.
+##' @return
+##' \itemize{
+##' \item{peakTable.csv} A csv file contaning information about the significantly enriched regions, including chromosome,start,end,peakPositions,peakReadCountSums,rpkm.peakReadCountSums,chipPeakHeights,controlPeakHeights,p.values,fdr,foldChange.
+##' \item{coverageViews slot} A RleViews object containing Views of the peak regions. 
+##' }
+##' @section Usage : {
+##' findPeaks(obj.chip=NULL,obj.control=NULL,bamFile.chip=character(0),bamFile.control=character(0),fdr.max=1e-5,foldChange.min=2)
+##' }
+##' @examples
+##' #findPeaks(bamFile.chip)
+##' #findPeaks(bamFile.chip,bamFile.control)
+##' #findPeaks(obj.chip)
+##' #findPeaks(obj.chip,obj.control)
+##' #findPeaks(obj.chip,obj.control,bamFile.chip,bamFile.control)
 ###############################################################################
 
 
 setMethod(
     f="findPeaks",
-    signature="SeqData",
-    definition=function(obj.chip=NULL,obj.control=NULL,bamFile.chip=character(1),bamFile.control=character(1)){
+    signature=c(
+        obj.chip="SeqData",obj.control="SeqData",
+        bamFile.chip="character",bamFile.control="character"),
+    definition=function(
+        obj.chip=NULL,obj.control=NULL,
+        bamFile.chip=character(0),bamFile.control=character(0),
+        fdr.max=1e-5,foldChange.min=2){
         
-        
-        ##----------------------------------------------------------------------
+        ## ---------------------------------------------------------------------
         ## Assign enriched Regions   
-        ##
-        # TODO: check if readCoverage is available
+
+        # set bamFile slot of the obj
+        bamFile(obj.chip)=bamFile.chip
+        bamFile(obj.control)=bamFile.control
         
-        ## because this function involves two obj, to avoid the complication, keep this code here. 
-        
-        cat("Defining read enriched regions ...","\n")
-        
-        #peakRegions(obj)=slice(readCoverage(obj),lower=5)
-        
-        
-        islands.chip=slice(readCoverage(obj.chip),lower=5)
-        
-        if (exists("obj.control")){
-            chrl=names(chrSize(obj.chip))
-            
-            islands.control=RleViewsList(sapply(chrl,function(chr) {
-                Views(
-                    readCoverage(obj.control)[[chr]],
-                    start=start(islands.chip[[chr]]),
-                    end=end(islands.chip[[chr]]))
-            }))
-            # this is what Views are, start, end and readCoverage
-            
-            
-            peaks.chip=viewMaxs(islands.chip)
-            peaks.control=viewMaxs(islands.control)
-            
-            enriched=peaks.chip>peaks.control
-            
-            peakRegions(obj.chip)=islands.chip[enriched]
-            peakRegions(obj.control)=islands.control[enriched]
-            
-            
-        }else{
-            peakRegions(obj.chip)=islands.chip
+        # check readCoverage slot
+        if (length(readCoverage(obj.chip))==0||length(readCoverage(obj.control))==0){                   
+            obj.chip=getReadCoverage(obj.chip,bamFile=bamFile.chip)
+            obj.control=getReadCoverage(obj.control,bamFile=bamFile.control)
         }
         
-        # slicedRegions=slice(readCoverage(obj),lower=5)
-        # peakRegions(obj)=slicedRegions[ranges(slicedRegions>100)]
-        
-        
-        #obj.chip=getpeakRegions(obj.chip)
-        
-        #obj.chip=getpeakRegions(obj.chip=obj.chip,obj.control=obj.control) 
-        #obj.control=getpeakRegions(obj.chip=obj.control)
+        cat("Defining read enriched regions ...","\n")
+        islands.chip=slice(readCoverage(obj.chip),lower=5)
+        chrl=names(chrSize(obj.chip))
+        islands.control=RleViewsList(sapply(chrl,function(chr) {
+            Views(
+                readCoverage(obj.control)[[chr]],
+                start=start(islands.chip[[chr]]),
+                end=end(islands.chip[[chr]]))
+        }))
+        # (this is what Views are, start, end and readCoverage)
 
+        peaks.chip=viewMaxs(islands.chip)
+        peaks.control=viewMaxs(islands.control)
+        
+        enriched=peaks.chip>=peaks.control
+        # (added "=" to the equation so that when obj.chip and obj.control are the same, they still can be processed)
+        
+        coverageViews(obj.chip)=islands.chip[enriched]
+        coverageViews(obj.control)=islands.control[enriched]
 
-
-        ##----------------------------------------------------------------------
-        ##  findPeakSummit  
-        ##       
+        ## ---------------------------------------------------------------------
+        ## findPeaks 
         
         cat("Finding peak summits ... ","\n")
         
-        
-        ### TODO: switch for either TFBS or Histone modification 
-        # now go with TFBS
-        
-
-        #         peaks.chip=viewMaxs(peakRegions(obj.chip))
-        #         peaks.control=viewMaxs()
-        #         
-        #         enriched=peaks.chip>peaks.control
-        #         
-        #         peakRegions(obj.chip)=peaks.chip[enriched]
-        #         peakRegions(obj.control)=peaks.control[enriched]
-        
-        ## TODO: add peakPositions.control for sample swap to remove negtive peaks, or just add a swapper which is better off. 
-        
-        ### findPeaks
         # get the postion of the maximum peak height (summit)
-        
-        peakPositions=viewWhichMaxs(peakRegions(obj.chip))
+        peakPositions=viewWhichMaxs(coverageViews(obj.chip))
         
         ## center the flat peaks
         # viewWhichMaxs returns the leftmost positon for flat peaks, to center the positon of the flat peaks
-        
-        # create a logical to pick flat peaks
-        flatPeaks = width(viewRangeMaxs(peakRegions(obj.chip)))>1
-        
-        flatPeaks.increment=floor(width(viewRangeMaxs(peakRegions(obj.chip)))[flatPeaks])/2
-        
+        flatPeaks = width(viewRangeMaxs(coverageViews(obj.chip)))>1
+        flatPeaks.increment=floor(
+            width(viewRangeMaxs(coverageViews(obj.chip)))[flatPeaks])/2
         peakPositions[flatPeaks]= peakPositions[flatPeaks]+flatPeaks.increment
         
-        ### estimate significance of peaks from the control   
+        ##-----normalize libSize difference-----##
         
-        # TODO: if (bamFile.control==NULL) {exlude 1k}
-        if (!exists("obj.control")||!exists("bamFile.control")){
-            bamFile.control=bamFile.chip
-        } 
+        # normalize libary size difference when control has more reads
+        libSizeDiff=libSize(obj.chip)/libSize(obj.control)
+        cat("library size ratio (chip/control) is",libSizeDiff,"\n")
+        if (libSizeDiff<1) {
+            cat("Sampling control data to normalize library size difference...","\n")
+            libSize.normalize=min(libSize(obj.chip),libSize(obj.control))
+            readAlignment(obj.chip)=sample(
+                readAlignment(obj.chip),libSize.normalize)
+            readAlignment(obj.control)=sample(
+                readAlignment(obj.control),libSize.normalize)
+            
+        }
+
+        # normalize libary size difference when chip has more reads
+        peakHeights=viewMaxs(coverageViews(obj.chip))
+        libSizeDiff=libSize(obj.chip)/libSize(obj.control)
+        if (libSizeDiff>=1){
+            cat("libSizeDiff=",libSizeDiff,"normalizeing peakHeight to libSize","\n")
+            peakHeights=peakHeights/libSizeDiff
+        }
+        
+        ##-----estimate significance of peaks from the control-----##
         
         # calculate lambda, the average
         lambda=NumericList(sapply(chrl,function(chr) {
             
             # setting up different size of windows for calcualting lambda
-            views.control.200=Views(readCoverage(obj.control)[[chr]],start=peakPositions[[chr]]-100,end=peakPositions[[chr]]+100)
+            views.control.1k=Views(
+                readCoverage(obj.control)[[chr]],
+                start=peakPositions[[chr]]-500,
+                end=peakPositions[[chr]]+500)
             
-            views.control.1k=Views(readCoverage(obj.control)[[chr]],start=peakPositions[[chr]]-500,end=peakPositions[[chr]]+500)
+            views.control.5k=Views(
+                readCoverage(obj.control)[[chr]],
+                start=peakPositions[[chr]]-2500,
+                end=peakPositions[[chr]]+2500)
             
-            views.control.5k=Views(readCoverage(obj.control)[[chr]],start=peakPositions[[chr]]-2500,end=peakPositions[[chr]]+2500)
-            
-            views.control.10k=Views(readCoverage(obj.control)[[chr]],start=peakPositions[[chr]]-5000,end=peakPositions[[chr]]+5000)
+            views.control.10k=Views(
+                readCoverage(obj.control)[[chr]],
+                start=peakPositions[[chr]]-5000,
+                end=peakPositions[[chr]]+5000)
             
             # calculate lambda using above views for each chromosome           
-            background.peakPositions=as.integer(readCoverage(obj.control)[[chr]][peakPositions[[chr]]])
-            
-            background.chr=sum(readCoverage(obj.control)[[chr]])/chrSize(obj.control)[chr]
-            
-            background.200=viewSums(views.control.200)/200
+            background.region=as.integer(
+                readCoverage(obj.control)[[chr]][peakPositions[[chr]]])
+            background.chr=sum(
+                readCoverage(obj.control)[[chr]])/chrSize(obj.control)[chr]
             background.1k=viewSums(views.control.1k)/1000
             background.5k=viewSums(views.control.5k)/5000
             background.10k=viewSums(views.control.10k)/1e4
-            
-            lambda=round(pmax(background.peakPositions,background.chr,background.200,background.1k,background.5k,background.10k))
-            
+
+            # exclude background.region, background.500bp if obj.control is absent
+            if (identical(readCoverage(obj.chip),readCoverage(obj.control))){
+                lambda=round(
+                    pmax(background.chr,background.5k,background.10k))                
+            }else{
+                lambda=round(
+                    pmax(background.chr,background.region,
+                         background.1k,background.5k,background.10k))
+            }
             return(lambda)
             
         }))
-        
+
         # calculate p-value, fdr and foldChange
-        # p-value, probability of observing x in the poisson distribution of the  background        
-        
-        
-        
-        
-        
-        # normalize libary size difference when chip has more reads
-        
-        peakHeights=viewMaxs(peakRegions(obj.chip))
-        libSizeDiff=libSize(obj.chip)/libSize(obj.control)
-        if (libSizeDiff>=1){
-            peakHeights=peakHeights/libSizeDiff
-            cat("libSizeDiff=",libsizeDiff,"normalizeing peakHeight to libSize","\n")
-        }
-        
-        ## TODO: add scale factor for libSizeDiff
-        
+        # (p-value, probability of observing x in the poisson distribution of the  background)  
         cat("Estimating significace of enrichement:","\n")
-        cat("p-value, fdr, fold change...","\n")
+        cat("p-value, fdr, foldChange...","\n")
         
-        p.values=NumericList(sapply(chrl,function(chr){ppois(peakHeights[[chr]],lambda[[chr]],lower.tail=FALSE)}))
+        p.values=NumericList(sapply(chrl,function(chr){
+            ppois(peakHeights[[chr]],lambda[[chr]],lower.tail=FALSE)}))
         
-        fdr=NumericList(sapply(chrl,function(chr){p.adjust(p.values[[chr]],method="fdr")}))       
+        fdr=NumericList(sapply(chrl,function(chr){
+            p.adjust(p.values[[chr]],method="fdr")}))       
         
         # calculate the fold change over the "average" in the control        
         foldChange <- (peakHeights +1)/(lambda+1)
-        #         
-##----------------------------------------------------------------------------
-#        # output just peakTable
         
-        
-#         # make peaksTable
-#         peakTable=do.call(cbind,sapply(chrl,function(chr){
-#             data.frame(
-#                 # TODO: add chromosome
-#                 #index=seq(1:length(peakRegions(obj.chip)[[chr]]))
-#                 chromosome=rep(chrl[which(chrl==chr)],length(peakHeights[[chr]])),
-#                 #chromosome=chr==chrl,
-#                 start=start(peakRegions(obj.chip)[[chr]]),
-#                 end=end(peakRegions(obj.chip)[[chr]]),
-#                 peakPositions=peakPositions[[chr]],
-#                 chip=peakHeights[[chr]],
-#                 control=round(lambda)[[chr]],
-#                 p.values=p.values[[chr]],
-#                 fdr=fdr[[chr]],
-#                 foldChange=foldChange[[chr]]
-#             )}))
-#         
-#         colnames(peakTable)=c("chromosome","starts","ends","peakPositions","chip","control","p.values","fdr","foldChange")
-#         
-# 
-#         # peakTable.fdr=peakTable[order(peakTable[,8]),]
-#         # somehow this gives an matrix
-#         
-#         peakTable.fdr=data.frame(peakTable[order(peakTable[,8]),])
-#         
-#         significantPeaks=subset(peakTable.fdr,fdr<=1e-3&foldChange>=3)
-#         
-#         cat("Output peakTable","\n")
-#         write.csv(file="PeakTable.csv",significantPeaks)
-#         
- ##----------------------------------------------------------------------------       
-        # change the peakRegions to the final significantPeaks
-        # or have findPeaks with user adjustable fdr setting ready to intake peakRegions as a quick start. no. 
-        
-        peakIndex=(fdr<=1e-3&foldChange>=3)
-        #TODO: make fdr adjustable to user
-        
+        ##-----change the coverageViews to the final significantPeaks-----##
+
+        # subseting coverageViews views, so it only contains significant peaks
+        peakIndex=(fdr<=fdr.max&foldChange>=foldChange.min)
         fdr=fdr[peakIndex]
         foldChange=foldChange[peakIndex]
         p.values=p.values[peakIndex]
-        
-        
-        
-        
-        #subseting peakRegions views, so it only contains significant peaks, use it for calculating readCounts
-        peakRegions(obj.chip)=peakRegions(obj.chip)[peakIndex]      
-              
-        peakReadCountSums=viewSums(peakRegions(obj.chip))
-        
-        peakPositions=viewWhichMaxs(peakRegions(obj.chip))
-        
-        chipPeakHeights=viewMaxs(peakRegions(obj.chip))
 
+        coverageViews(obj.chip)=coverageViews(obj.chip)[peakIndex]
+        peakReadCountSums=viewSums(coverageViews(obj.chip))
+        peakPositions=viewWhichMaxs(coverageViews(obj.chip))
+        chipPeakHeights=viewMaxs(coverageViews(obj.chip))
         controlPeakHeights=lambda[peakIndex]
         
-
-        
+        ## ---------------------------------------------------------------------
+        ## Output 
         
         # make peaksTable
-        peakTable=do.call(cbind,sapply(chrl,function(chr){
-            data.frame(
-                # TODO: add chromosome
-                #index=seq(1:length(peakRegions(obj.chip)[[chr]]))
-                #chromosome=rep(chrl[which(chrl==chr)],length(chipPeakHeights[[chr]])),
-                chromosome=rep(chr,length(peakRegions(obj.chip)[[chr]])),
-                #chromosome=chr==chrl,
-                start=start(peakRegions(obj.chip)[[chr]]),
-                end=end(peakRegions(obj.chip)[[chr]]),
-                peakPositions[[chr]],
-                peakReadCountSums[[chr]],
-                chipPeakHeights[[chr]],
-                controlPeakHeights[[chr]],
-                p.values=p.values[[chr]],
-                fdr=fdr[[chr]],
-                foldChange=foldChange[[chr]]
-                
-            )}))
+        peakList=sapply(chrl,function(chr){      
+            chromosome=rep(chr,length(coverageViews(obj.chip)[[chr]]))
+            start=start(coverageViews(obj.chip)[[chr]])
+            end=end(coverageViews(obj.chip)[[chr]])
+            numBasesCovered=sum(width(coverageViews(obj.chip)[[chr]]))
+            peakPositions=peakPositions[[chr]]
+            peakReadCountSums=peakReadCountSums[[chr]]
+            rpkm.peakReadCountSums=.rpkm.libSize(
+                peakReadCountSums,libSize(obj),numBasesCovered)
+            chipPeakHeights=chipPeakHeights[[chr]]
+            controlPeakHeights=controlPeakHeights[[chr]]
+            p.values=p.values[[chr]]
+            fdr=fdr[[chr]]
+            foldChange=foldChange[[chr]]
+            cbind(
+                chromosome,start,end,peakPositions,peakReadCountSums,
+                rpkm.peakReadCountSums,chipPeakHeights,controlPeakHeights,
+                p.values,fdr,foldChange)
+        })
         
-        colnames(peakTable)=c("chromosome","starts","ends","peakPositions","peakReadCountSums","chipPeakHeights","controlPeakHeights","p.values","fdr","foldChange")
-       
-        peakTable.fdr=data.frame(peakTable[order(peakTable[,9]),])
+        peakTable=do.call(rbind,peakList)
         
+        # sort table based on fdr
+        peakTable.fdr=data.frame(peakTable[order(peakTable[,10]),])
+        
+        #output table
         cat("Output peakTable...","\n")
-        write.csv(file="PeakTable.csv",peakTable.fdr)
         
+        fileName=paste("peakTable-",.timeStamp(bamFile(obj)),sep="")
+        write.csv(file=fileName,peakTable.fdr)
         
-       
+    return(obj.chip)
+
+    })
+
+
+## findPeaks(obj.chip,obj.control)
+## a dispatcher when just pass in obj.chip and obj.control, given their bamFile slot are non-empty
+setMethod(
+    f="findPeaks",
+    signature=c(
+        obj.chip="SeqData",obj.control="SeqData",
+        bamFile.chip="missing",bamFile.control="missing"),
+    definition=function(
+        obj.chip=NULL,obj.control=NULL,
+        fdr.max=1e-5,foldChange.min=2){
         
+        #.checkBamSlot
+        # check whether bamFile slot is empty
+        if (length(bamFile(obj.chip))==0||length(bamFile(obj.control))==0) {
+            stop ("Slot bamFile is empty, please fill in bamFile slot first","\n")    
+        }
         
+        bamFile.chip=bamFile(obj.chip)
+        bamFile.control=bamFile(obj.control)
         
-        
-        
-##----------------------------------------------------------------------------         
-        
-        
-        #TODO: plot enriched.peaks vs unenriched (It's a nice pic, worth doing)
-        
-        return(obj.chip)
-        
+        obj=findPeaks(obj.chip,obj.control,bamFile.chip,bamFile.control,fdr=fdr.max,foldChange=foldChange.min)
+        return(obj)
+
+})
+
+## findPeaks(obj.chip)
+## a dispatcher when only obj.chip is available
+setMethod(
+    f="findPeaks",
+    signature=c(
+        obj.chip="SeqData",obj.control="missing",
+        bamFile.chip="missing",bamFile.control="missing"),
+    definition=function(
+        obj.chip=NULL,fdr.max=1e-5,foldChange.min=2){
+      
+      # if obj.control is missing, use obj.chip itself as its control
+      obj.control=obj.chip
+      obj=findPeaks(obj.chip,obj.control,fdr=fdr.max,foldChange=foldChange.min)
+      return(obj)
         
     })
 
-##------------------------------------------------------------------------------
-##  findPeakSummit  dispatcher
-##   
 
+## findPeaks(bamFile.chip,bamFile.control)
+## a dispatcher for passing in bamFile.chip and bamFile.control
 setMethod(
     f="findPeaks",
-    signature="missing",
-    definition=function(obj.chip=NULL,obj.control=NULL,bamFile.chip=character(1),bamFile.control=character(1)){
+    signature=c(
+        obj.chip="missing",obj.control="missing",
+        bamFile.chip="character",bamFile.control="character"),
+    definition=function(
+        bamFile.chip=character(0),bamFile.control=character(0),
+        fdr.max=1e-5,foldChange.min=2){
         
         obj.chip=new("SeqData")
         obj.control=new("SeqData")
@@ -284,24 +283,42 @@ setMethod(
         obj.chip=getReadCoverage(obj.chip,bamFile.chip)
         obj.control=getReadCoverage(obj.control,bamFile.control)
         
-        # normalize libSize difference
-        libSizeDiff=libSize(obj.chip)/libSize(obj.control)
+        obj.chip=findPeaks(
+            obj.chip,obj.control,fdr=fdr.max,foldChange=foldChange.min)
         
-        cat("library size ratio (chip/control) is",libSizeDiff,"\n")
-        
-        if (libSizeDiff<1) {
-            
-            cat("Sample control data for normalizing library size difference...","\n")
-            libSize.normalize=min(libSize(obj.chip),libSize(obj.control))
-            readAlignment(obj.chip)=sample(readAlignment(obj.chip),libSize.normalize)
-            readAlignment(obj.control)=sample(readAlignment(obj.control),libSize.normalize)
-            
-        }
-        
-        obj.chip=findPeaks(obj.chip,obj.control)
-        
-        
+        return(obj.chip)
+       
     })
+
+
+## findPeaks(bamFile.chip)
+## a dispatcher for passing in just bamFile.chip
+setMethod(
+    f="findPeaks",
+    signature=c(
+        obj.chip="missing",obj.control="missing",
+        bamFile.chip="character", bamFile.control="missing"),
+    definition=function(
+        bamFile.chip=character(0),fdr.max=1e-5,foldChange.min=2){
+        
+        # if bamFile.control is missing, use bamFile.chip itself as its control
+        bamFile.control=bamFile.chip
+        obj=findPeaks(bamFile.chip=bamFile.chip,bamFile.control=bamFile.control,fdr=fdr.max,foldChange=foldChange.min)
+        
+        return (obj)
+
+        })
+        
+##-----------------------------------------------------------------------------
+## TODO:
+
+
+
+# TODO: switch for either TFBS or Histone modification 
+# TODO: add peakPositions.control for sample swap to remove negtive peaks, or just add a swapper which is better off. 
+# TODO: add scale factor for libSizeDiff
+# TODO: plot enriched.peaks vs unenriched (It's a nice pic, worth doing)
+   
 
 ## performance
 ## chr12 with H3 as control

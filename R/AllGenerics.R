@@ -1,112 +1,124 @@
-# SeqGardgets - Generics
+# SeqDataTools - AllGenerics
 # 
 # 
 ###############################################################################
 
 # Generics for Methods
 
+##' @exportMethod viewCoverage
 setGeneric(
-    name="viewReadCoverage",
-    def=function(obj=NULL,bamFileName=character(1)){
-        standardGeneric("viewReadCoverage")
+    name="viewCoverage",
+    def=function(obj=NULL,bamFile=character(0),ranges=GRanges(),annotationFile=character(0)){
+        standardGeneric("viewCoverage")
     })
 
-# TODO: set viewReadCoverage also like countReadsOverFeatures
-
+##' @exportMethod getReadCoverage
 setGeneric(
     name="getReadCoverage",
-    def=function(obj,bamFileName){
+    def=function(obj,bamFile=character(0)){
         standardGeneric("getReadCoverage")
     })
 
-
+##' @exportMethod getReadAlignment
 setGeneric(
     name="getReadAlignment",
-    def=function(obj,bamFileName){
+    def=function(obj,bamFile=character(0),annotationFile=character(0)){
         standardGeneric("getReadAlignment")
     })
 
+##' @exportMethod getFeatureAnnotation
 setGeneric(
     name="getFeatureAnnotation",
-    def=function(obj,annotationFileName,feature=c("gene","tss","exon","transcript")){
+    def=function(obj=NULL,annotationFile=character(0),feature=c("gene","exon","transcript","tss","erv","5LTR","custom")){
         standardGeneric("getFeatureAnnotation")
     })
 
+
+##' @exportMethod countReads
 setGeneric(
-    name="countReadsOverFeatures",
-    def=function(obj=NULL,bamFileName=character(1),annotationFileName=character(1),countingMode="Union"){
-        standardGeneric("countReadsOverFeatures")
+    name="countReads",
+    def=function(obj=NULL,bamFile=character(0),annotationFile=character(0),countingMode="Union",feature=character(0),description=character(0)){
+        standardGeneric("countReads")
     })
 
+
+##' @exportMethod findPeaks
 setGeneric(
     name="findPeaks",
-    def=function(obj.chip=NULL,obj.control=NULL,bamFile.chip=character(1),bamFile.control=character(1)){
+    def=function(obj.chip=NULL,obj.control=NULL,bamFile.chip=character(0),bamFile.control=character(0),fdr.max=1e-5,foldChange.min=2){
         standardGeneric("findPeaks")
     })
 
 
 
 ##------------------------------------------------------------------------------
-## Generics for Accessors and Setters
-##
 
+# Generics for Accessors and Setters
+
+##'@exportMethod chrSize<-
 setGeneric(
     name="chrSize<-",
     def=function(obj,value){
         standardGeneric("chrSize<-")
     })
 
+##'@exportMethod chrSize
 setGeneric(
     name="chrSize",
     def=function(obj){
         standardGeneric("chrSize")
     })
 
+##' @exportMethod libSize<-
 setGeneric(
     name="libSize<-",
     def=function(obj,value){
         standardGeneric("libSize<-")
     })
 
+##' @exportMethod libSize
 setGeneric(
     name="libSize",
     def=function(obj){
         standardGeneric("libSize")
     })
 
-
-
+##' @exportMethod readAlignment<-
 setGeneric(
     name="readAlignment<-",
     def=function(obj,value){
         standardGeneric("readAlignment<-")
     })
 
+##' @exportMethod readAlignment
 setGeneric(
     name="readAlignment",
     def=function(obj){
         standardGeneric("readAlignment")
     })
 
+##' @exportMethod readCoverage
 setGeneric(
     name="readCoverage",
     def=function(obj){
         standardGeneric("readCoverage")
     })
 
+##' @exportMethod readCoverage<-
 setGeneric(
     name="readCoverage<-",
     def=function(obj,value){
         standardGeneric("readCoverage<-")
     })
 
-
+##' @exportMethod featureAnnotation<-
 setGeneric(
     name="featureAnnotation<-",    
     def=function(obj,value){
         standardGeneric("featureAnnotation<-")
     })
 
+##' @exportMethod featureAnnotation
 setGeneric(
     name="featureAnnotation",
     def=function(obj){
@@ -114,21 +126,64 @@ setGeneric(
     })
 
 
-
+##' @exportMethod coverageViews
 setGeneric(
-    name="peakRegions",
+    name="coverageViews",
     def=function(obj){
-        standardGeneric("peakRegions")
+        standardGeneric("coverageViews")
     })
 
+##' @exportMethod coverageViews<-
 setGeneric(
-    name="peakRegions<-",
+    name="coverageViews<-",
     def=function(obj,value){
-        standardGeneric("peakRegions<-")
+        standardGeneric("coverageViews<-")
     })
 
+##' @exportMethod annotatePeaks
 setGeneric(
     name="annotatePeaks",
-    def=function(obj,bamFileName){
+    def=function(obj=NULL,peakTable=character(0),annotationFile=character(0),feature=c("gene","erv")){
         standardGeneric("annotatePeaks")
+    })
+
+##' @exportMethod bamFile
+setGeneric(
+    name="bamFile",
+    def=function(obj){
+        standardGeneric("bamFile")
+    })
+
+##' @exportMethod bamFile<-
+setGeneric(
+    name="bamFile<-",    
+    def=function(obj,value){
+        standardGeneric("bamFile<-")
+    })
+
+##' @exportMethod annotationFile
+setGeneric(
+    name="annotationFile",
+    def=function(obj){
+        standardGeneric("annotationFile")
+    })
+
+##' @exportMethod annotationFile<-
+setGeneric(
+    name="annotationFile<-",    
+    def=function(obj,value){
+        standardGeneric("annotationFile<-")
+    })
+
+##' @exportMethod coverageView
+setGeneric(
+    name="coverageView",
+    def=function(obj,ranges){
+        standardGeneric("coverageView")
+    })
+##' @exportMethod intersectChr
+setGeneric(
+    name="intersectChr",
+    def=function(reads,features){
+        standardGeneric("intersectChr")
     })
