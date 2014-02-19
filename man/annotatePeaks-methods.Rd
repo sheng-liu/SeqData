@@ -1,0 +1,59 @@
+\docType{methods}
+\name{annotatePeaks}
+\alias{annotatePeaks}
+\title{annotatePeaks}
+\arguments{
+  \item{obj}{An SeqData Object.}
+
+  \item{feature=c("gene","erv","repeats","transposon")}{including
+  all features that are available in getFeatureAnnotation
+  function. Note gene, exon, transcripts and tss are
+  processed the same as gene.}
+
+  \item{peakTable}{Full path to results "peakTable.csv"
+  from findPeaks.}
+
+  \item{distance.max}{maximum peak-to-feature distance used
+  to locate features.}
+
+  \item{description}{Optional. User can input short
+  desciption for the output file, it will show up in the
+  file name of the output file.}
+}
+\value{
+  a targetTable.
+}
+\description{
+  Annotate peaks with internal or user provided annotation
+  file.
+}
+\details{
+  It answers what gene are enriched with this
+  protein/histone mark. Back end it is assaying which peak
+  position overlaps with tss position by using "nearest"
+  function from GenomicRanges package. It can annotate not
+  just peaks find by annotatePeaks, but whatever RleViews
+  is stored in coverageView.
+}
+\section{Usage}{
+  { annotatePeaks(
+  obj,annotationFile=character(0),feature=character(0),distance.max=4000,description=character(0))
+  }
+}
+\examples{
+#if you have setup bamFile and annotationFile slot
+#annotatePeaks(obj)
+
+#if you want to use internal annotation file (feature)
+#annotatePeaks(obj, feature="gene")
+
+# specify another annotation file
+#annotatePeaks(obj,annotationFile)
+
+# use peakTable output from findPeaks
+#annotatePeaks(peakTable, feature)
+
+# use peakTable and annotation file
+#annotatePeaks(peakTable,annotationFile)
+}
+

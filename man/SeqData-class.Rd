@@ -1,0 +1,63 @@
+\docType{methods}
+\name{SeqData}
+\alias{SeqData}
+\title{SeqData-constructor and supported functions}
+\arguments{
+  \item{bamFie}{Full path to bam file (optional).}
+
+  \item{annotationFile}{Full path to annotation file
+  (optional).}
+}
+\value{
+  a SeqData object contains 8 slots with four supporting
+  functions.
+}
+\description{
+  The SeqData function is a constructor for constructing
+  SeqData instances. Four supporting functions are
+  available to conduct basic sequence analysis upon
+  SeqData.
+}
+\details{
+  This package provides a data structure and four
+  supporting functions for sequencing data (eg.ChIPseq and
+  RNAseq) analysis. \itemize{ \item{SeqData} an S4 data
+  structure, contains 8 slots:
+
+  bamFile="character",
+
+  annotationFile="character",
+
+  chrSize="integer",
+
+  libSize="numeric",
+
+  readAlignment="GAlignments",
+
+  readCoverage="RleList",
+
+  featureAnnotation="GRanges",
+
+  coverageView="SimpleRleViewsList"
+
+  \item{Supporting fucntions} Four supporting functions
+  includes:
+
+  viewCoverage
+
+  countReads
+
+  findPeaks
+
+  annotatePeaks }
+}
+\section{Usage}{
+  {SeqData(bamFile=character(0),annotationFile=character(0))}
+}
+\examples{
+## x=SeqData(bamFile="bamFileLocation",annotationFile="annotationFileLocation")
+}
+\seealso{
+  See corresponding function documentation for details.
+}
+
