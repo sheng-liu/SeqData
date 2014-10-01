@@ -5,9 +5,10 @@
 
 # get feature annotation by features from two inbuild annotation file refGene.csv and rmasker_repClassLTR.csv. features include "gene","exon","transcript","tss","erv","5LTR"
 
-# can also get feature annotation from  csv format annotation file downloaded from UCSC if it has the miminum five field: 'chrom','txSart','txEnd','name','strand'
+# can also get feature annotation from  csv format annotation file downloaded from UCSC if it has the miminum five field: 'chrom','txSart','txEnd','strand' and 'name'
 
-#feature=c("gene","exon","transcript","tss","erv","retro","TE","5LTR")
+# feature=c("gene","exon","transcript","tss","erv","repeats","transposon","5LTR")
+# defaults feature is "gene".
 
 # usage
 # getFeatureAnnotation(annotationFile=annotationFile)
@@ -17,7 +18,7 @@
 setMethod(
     f="getFeatureAnnotation",
     signature="SeqData",
-    definition=function(obj,annotationFile=character(0),feature=c("gene","exon","transcript","tss","erv","5LTR")){
+    definition=function(obj,annotationFile=character(0),feature="gene"){
   
         
         # check whether annotationFile is present
@@ -25,7 +26,7 @@ setMethod(
         # if no, use user supplied feature
         
         if (length(annotationFile!=0)){
-            cat("Please make sure the annotation file has required field:'chrom','txSart','txEnd','name','strand'.\n\n")
+            cat("Please make sure the annotation file has required field:'chrom','txSart','txEnd','strand','name'.\n\n")
             
             cat("Setting up annotationFile slot...\n")
             annotationFile(obj)=annotationFile
@@ -38,39 +39,43 @@ setMethod(
             cat("Processing annotation file...\n")
             featureAnnot=switch(feature,
                                 "gene"={
-                                    annotationFile(obj)=system.file("extdata", "refGene.csv", package="SeqDataTools")
+                                    annotationFile(obj)=system.file(
+                                        "extdata", "refGene.csv", package="SeqData")
                                     featureAnnot=read.csv(file=annotationFile(obj),
                                                           as.is=T,header=T) 
                                     cat("Setting up featureAnnotation slot...","\n")
                                     featureAnnotation(obj)=.geneAnnot(featureAnnot)                                
                                 },
                                 "erv"={
-                                    annotationFile(obj)=system.file("extdata", "rmasker_repClassLTR.csv", package="SeqDataTools")
+                                    annotationFile(obj)=system.file(
+                                        "extdata", "rmasker_repClassLTR.csv", package="SeqData")
                                     featureAnnot=read.csv(file=annotationFile(obj),
                                                           as.is=T,header=T) 
                                     cat("Setting up featureAnnotation slot...","\n")
                                     featureAnnotation(obj)=
                                         .featureAnnot(featureAnnot)
                                 },
-                                "retro"={
+                                "repeats"={
                                     cat("Setting up featureAnnotation slot...","\n")
-                                    data(retro)
-                                  featureAnnotation(obj)=retro
+                                    data(repeats)
+                                  featureAnnotation(obj)=repeats
                                 },
-                                "TE"={
+                                "transposon"={
                                     cat("Setting up featureAnnotation slot...","\n")
-                                    data(TE)
-                                    featureAnnotation(obj)=TE
+                                    data(transposon)
+                                    featureAnnotation(obj)=transposon
                                 },
                                 "exon"={
-                                    annotationFile(obj)=system.file("extdata", "refGene.csv", package="SeqDataTools")
+                                    annotationFile(obj)=system.file(
+                                        "extdata", "refGene.csv", package="SeqData")
                                     featureAnnot=read.csv(file=annotationFile(obj),
                                                           as.is=T,header=T) 
                                     cat("Setting up featureAnnotation slot...","\n")
                                     featureAnnotation(obj)=.exonAnnot(featureAnnot)                                
                                 },
                                 "transcript"={
-                                    annotationFile(obj)=system.file("extdata", "refGene.csv", package="SeqDataTools")
+                                    annotationFile(obj)=system.file(
+                                        "extdata", "refGene.csv", package="SeqData")
                                     
                                     featureAnnot=read.csv(file=annotationFile(obj),
                                                           as.is=T,header=T) 
@@ -79,7 +84,8 @@ setMethod(
                                     
                                 },
                                 "tss"={
-                                    annotationFile(obj)=system.file("extdata", "refGene.csv", package="SeqDataTools")
+                                    annotationFile(obj)=system.file(
+                                        "extdata", "refGene.csv", package="SeqData")
                                     featureAnnot=read.csv(file=annotationFile(obj),
                                                           as.is=T,header=T) 
                                     cat("Setting up featureAnnotation slot...","\n")
@@ -88,7 +94,8 @@ setMethod(
                                         resize(geneAnnot,fix="start",width=1)
                                 },
                                 "5LTR"={
-                                    annotationFile(obj)=system.file("extdata", "rmasker_repClassLTR.csv", package="SeqDataTools")
+                                    annotationFile(obj)=system.file(
+                                        "extdata", "rmasker_repClassLTR.csv", package="SeqData")
                                     featureAnnot=read.csv(file=annotationFile(obj),
                                                           as.is=T,header=T) 
                                     cat("Setting up featureAnnotation slot...","\n")
@@ -105,7 +112,7 @@ setMethod(
 setMethod(
     f="getFeatureAnnotation",
     signature="missing",
-    definition=function(annotationFile=character(0),feature=c("gene","exon","transcript","tss","erv","5LTR")){
+    definition=function(annotationFile=character(0),feature="gene"){
         
         obj=new("SeqData")
         
@@ -139,15 +146,16 @@ setMethod(
         end=as.integer(unlist(strsplit(refGene$exonEnds,split=",")))),
                          space=rep(refGene$chrom,refGene$exonCount),
                          strand=rep(refGene$strand,refGene$exonCount),
+                         gene=rep(refGene$name2,refGene$exonCount),
                          exon=paste(rep(refGene$name,refGene$exonCount),exon.index,sep=":"),
-                         transcript=rep(refGene$name,refGene$exonCount),
-                         gene=rep(refGene$name2,refGene$exonCount))
+                         transcript=rep(refGene$name,refGene$exonCount))
     
     # corce RangedData to GRanges object
     exonAnnot=as(geneAnnot,"GRanges")
     return(exonAnnot)
 }
 
+# GRanges implementation
 .geneAnnot=function(featureAnnot){
     featureAnnot=.duplicationCheck(featureAnnot)
     featureAnnot=GRanges(
@@ -161,6 +169,7 @@ setMethod(
     return(featureAnnot)     
     
 }
+
 
 .featureAnnot=function(featureAnnot){
     featureAnnot=.duplicationCheck(featureAnnot)
@@ -190,4 +199,14 @@ setMethod(
 ##-----------------------------------------------------------------------------
 ## LATER:
 # getAnnotationFromUCSC, feature="tss"
+
+## to do:
+
+# remove the obj
+# getFeatureAnnotation(obj,annotationFile=annotationFile)
+# getFeatureAnnotation(obj,feature="gene")
+
+
+
+
 

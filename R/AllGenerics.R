@@ -1,14 +1,16 @@
-# SeqDataTools - AllGenerics
+# SeqData - AllGenerics
 # 
 # 
 ###############################################################################
 
-# Generics for Methods
 
+
+
+# Generics for Methods
 ##' @exportMethod viewCoverage
 setGeneric(
     name="viewCoverage",
-    def=function(obj=NULL,bamFile=character(0),ranges=GRanges(),annotationFile=character(0)){
+    def=function(obj=NULL,obj.control=NULL, bamFile=character(0),bamFile.control=character(0),weight.control=1,feature=character(0),ranges=GRanges(),annotationFile=character(0),split.metaData=F,bigWig=F,description=character(0)){
         standardGeneric("viewCoverage")
     })
 
@@ -29,7 +31,7 @@ setGeneric(
 ##' @exportMethod getFeatureAnnotation
 setGeneric(
     name="getFeatureAnnotation",
-    def=function(obj=NULL,annotationFile=character(0),feature=c("gene","exon","transcript","tss","erv","5LTR","custom")){
+    def=function(obj=NULL,annotationFile=character(0),feature="gene"){
         standardGeneric("getFeatureAnnotation")
     })
 
@@ -37,7 +39,7 @@ setGeneric(
 ##' @exportMethod countReads
 setGeneric(
     name="countReads",
-    def=function(obj=NULL,bamFile=character(0),annotationFile=character(0),countingMode="Union",feature=character(0),description=character(0)){
+    def=function(obj=NULL,bamFile=character(0),annotationFile=character(0),countingMode="Union",interFeature=TRUE,feature=character(0),description=character(0)){
         standardGeneric("countReads")
     })
 
@@ -45,11 +47,16 @@ setGeneric(
 ##' @exportMethod findPeaks
 setGeneric(
     name="findPeaks",
-    def=function(obj.chip=NULL,obj.control=NULL,bamFile.chip=character(0),bamFile.control=character(0),fdr.max=1e-5,foldChange.min=2){
+    def=function(obj.chip=NULL,obj.control=NULL,bamFile.chip=character(0),bamFile.control=character(0),fdr.max=1e-5,foldChange.min=2,description=character(0),local.lambda=T){
         standardGeneric("findPeaks")
     })
 
-
+##' @exportMethod getBaseAlignment
+setGeneric(
+    name="getBaseAlignment",
+    def=function(obj,bamFile=character(0),baseReport=character(0)){
+        standardGeneric("getBaseAlignment")
+    })
 
 ##------------------------------------------------------------------------------
 
@@ -126,24 +133,24 @@ setGeneric(
     })
 
 
-##' @exportMethod coverageViews
+##' @exportMethod coverageView
 setGeneric(
-    name="coverageViews",
+    name="coverageView",
     def=function(obj){
-        standardGeneric("coverageViews")
+        standardGeneric("coverageView")
     })
 
-##' @exportMethod coverageViews<-
+##' @exportMethod coverageView<-
 setGeneric(
-    name="coverageViews<-",
+    name="coverageView<-",
     def=function(obj,value){
-        standardGeneric("coverageViews<-")
+        standardGeneric("coverageView<-")
     })
 
 ##' @exportMethod annotatePeaks
 setGeneric(
     name="annotatePeaks",
-    def=function(obj=NULL,peakTable=character(0),annotationFile=character(0),feature=c("gene","erv")){
+    def=function(obj=NULL,peakTable=character(0),annotationFile=character(0),feature=character(0),distance.max=4000,description=character(0)){
         standardGeneric("annotatePeaks")
     })
 
@@ -187,3 +194,19 @@ setGeneric(
     def=function(reads,features){
         standardGeneric("intersectChr")
     })
+
+##' @exportMethod baseAlignment<-
+setGeneric(
+    name="baseAlignment<-",
+    def=function(obj,value){
+        standardGeneric("baseAlignment<-")
+    })
+
+##' @exportMethod baseAlignment
+setGeneric(
+    name="baseAlignment",
+    def=function(obj){
+        standardGeneric("baseAlignment")
+    })
+
+

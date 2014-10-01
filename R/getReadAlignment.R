@@ -3,6 +3,7 @@
 #
 ###############################################################################
 
+## bamFile must be sorted so far, updated on 2014-02-08
 
 ## this is a method to set readAlignment slot of SeqData
 # -create a new SeqData objects and return the filled one, if no SeqData object is passed in
@@ -11,6 +12,14 @@
 # function can determine whether SeqData is single end or pair end by looking at isize when read in the bamFile
 
 # when and only when annotationFile are passed in, getReadAlignment will also set featureAnnotation Slot for record, the final output is the readAlignment at those ranges specified at feature annotation slot.
+
+# param=ScanBamParam(flag=scanBamFlag(isDuplicate=FALSE,isUnmappedQuery=FALSE,isNotPassingQualityControls=FALSE,isProperPair=TRUE),what=c("isize"))
+
+
+# properPairOnly==T, read in only properly paired reads
+# properPairOnly==F, read in any reads
+# pair end reads are read in as single end, then paired to give isize
+
 
 # usage
 # getReadAlignment(bamFile=bamFile)
@@ -26,25 +35,59 @@ setMethod(
         # set bamFile slot
         bamFile(obj)=bamFile
         
+        ## error handling for bamFiles that doesn't have header
+        cat("Access bamFile Header information...\n")
+        bamHeader=try(invisible(scanBamHeader(bamFile)))
+        # invisible() stops printing out the bamHeader information
+        
+        
+        if ("try-error" %in% class(bamHeader)) {
+            # if no header information available
+            cat("bamFile Header information is missing, no data for chrSize slot. Try proceed...\n")
+            
+            # always sort when no header information available
+            cat("Sorting bamFile, this may take a while...\n")
+            
+            bamFile.sorted=paste(bamFile,".sorted",sep="")
+            sortBam(bamFile,bamFile.sorted)
+            bamFile=paste(bamFile.sorted,".bam",sep="")
+
+            
+        }else{
+            # get chrSize from bam Header
+            cat("Set ChrSize slot...\n")
+            chrSize=bamHeader[[1]]$targets
+            names(chrSize)=.checkChrNames(names(chrSize))
+            chrSize(obj)=chrSize
+            
+            # sort bam file if it is not sorted yet
+            sortFlag=grep("coordinate",bamHeader[[1]]$text$"@HD")
+            if (sortFlag==0||length(sortFlag)==0){
+                
+                # length(sortFlag)==0 deal with cases when bamHeader is empty, 
+                # it gives integer(0) of length 0, and logical(0)
+                
+                cat("bamFile is not sorted, sorting bamFile, this may take a while...\n")
+                bamFile.sorted=paste(bamFile,".sorted",sep="")
+                sortBam(bamFile,bamFile.sorted)
+                bamFile=paste(bamFile.sorted,".bam",sep="")
+            }
+            
+        }
+        
+        
         # make bam index file if it doesn't exist
         if(!file.exists(paste(bamFile,"bai",sep="."))){                
             cat("Making index file for bam...","\n")
             indexBam(bamFile)
         } 
         
-        # extract information from bamHeaders	 
-        bamHeader= scanBamHeader(bamFile) 
-        
-        # get chrSize
-        chrSize=bamHeader[[1]]$targets
-        names(chrSize)=.checkChrNames(names(chrSize))
-        chrSize(obj)=chrSize
-        
         # read in bam file
         cat("Processing bam file...","\n")
         
         # read in isize to determine its insert size also determine whether it is pair end or single end
-        param=ScanBamParam(flag=scanBamFlag(isDuplicate=FALSE,isUnmappedQuery=FALSE),what=c("isize"))
+        # param=ScanBamParam(flag=scanBamFlag(isDuplicate=FALSE,isUnmappedQuery=FALSE,isNotPassingQualityControls=FALSE,,isProperPair=TRUE),what=c("isize"))
+        param=ScanBamParam(flag=scanBamFlag(isDuplicate=FALSE,isUnmappedQuery=FALSE,isNotPassingQualityControls=FALSE),what=c("isize"))
         
         # note readGAlignments/readGAlignmentsFromBam default param is
         # flag=scanBamFlag(isUnmappedQuery=FALSE)
@@ -174,7 +217,7 @@ setMethod(
     bv=BamViews(bamPaths=bamPaths,bamRanges=bamRanges)
     
     
-    param=ScanBamParam(flag=scanBamFlag(isDuplicate=FALSE),what=c("isize"))
+    param=ScanBamParam(flag=scanBamFlag(isDuplicate=FALSE,isUnmappedQuery=FALSE,isNotPassingQualityControls=FALSE,isProperPair=TRUE),what=c("isize"))
     aln.bv=suppressWarnings(readGAlignmentsFromBam(bv,param=param)[[1]])
     
     # check the chrosomsome name to UCSC naming convention 
@@ -211,4 +254,10 @@ setMethod(
 
 
 # get species which the bam file is aligned to
+
+
+## TODO:
+## add a switcher to read in pair-end only or read in all reads,default to read in all reads, no matter paired or not
+
+
 

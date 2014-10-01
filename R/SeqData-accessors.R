@@ -1,8 +1,7 @@
-# SeqDataTools-Accessors and Setters
+# Accessors and Setters
 # 
 # 
 ###############################################################################
-
 
 setReplaceMethod(
     f="chrSize",
@@ -77,17 +76,17 @@ setMethod(
     })
 
 setReplaceMethod(
-    f="coverageViews",
+    f="coverageView",
     signature="SeqData",
     definition=function(obj,value){
-        initialize(obj,coverageViews=value)
+        initialize(obj,coverageView=value)
     })
 
 setMethod(
-    f="coverageViews",
+    f="coverageView",
     signature="SeqData",
     definition=function(obj){
-        obj@coverageViews
+        obj@coverageView
     })
 
 setMethod(
@@ -117,3 +116,20 @@ setReplaceMethod(
     definition=function(obj,value){
         initialize(obj,annotationFile=value)
     })
+
+setMethod(
+    f="baseAlignment",
+    signature="SeqData",
+    definition=function(obj){
+        obj@baseAlignment
+    })
+
+setReplaceMethod(
+    f="baseAlignment",
+    signature="SeqData",
+    definition=function(obj,value){
+        initialize(obj,baseAlignment=value)
+    })
+
+
+

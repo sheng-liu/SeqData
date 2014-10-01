@@ -40,7 +40,8 @@ setMethod(
         if (meanFragmentSize==0){
             cat("SeqData is likely to be single-end, estimating meanFragmentSize...")
             meanFragmentSize=round(.estimateFragmentSize(readAlignment(obj)))
-                                                                                       cat("estimated meanFragmentSize is ",meanFragmentSize,"\n")
+                                                                                                 
+            cat("estimated meanFragmentSize is ",meanFragmentSize,"\n")
         }else{
             cat("SeqData is pair-end, meanFragmentSize is ",
                 meanFragmentSize,"\n")
@@ -49,9 +50,17 @@ setMethod(
         # coerce GAlignments to GRanges
         aln <- as(readAlignment(obj), "GRanges")
         
-        # extend the reads
-        aln.extended= suppressWarnings(resize(aln, width=meanFragmentSize))
         
+        # extend the reads
+        if (meanFragmentSize==0){
+            cat("Extendeding fragments...\n")
+            aln.extended= suppressWarnings(resize(aln, width=meanFragmentSize)) 
+        }else{
+            cat("Fragments are not extended\n")
+            aln.extended=aln
+            
+        }
+       
         # compute bp coverage 
         cat("Computing read coverage...","\n")        
         readCoverage(obj)=coverage(aln.extended,width=seqlengths(readAlignment(obj)))
