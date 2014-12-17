@@ -10,8 +10,8 @@
 ##' @docType methods
 ##' @description Generate a bigWig file for viewing read coverage in a genome browser, or a coverageTable.csv for genomic ranges specified. 
 ##' @usage #not working
-##' viewCoverage(obj=NULL,obj.control=NULL, bamFile=character(0),bamFile.control=character(0),weight.control=1,feature=character(0),ranges=GRanges(),annotationFile=character(0),split.metaData=F,bigWig=F,description=character(0))
-         
+##' viewCoverage(obj=NULL,obj.control=NULL, bamFile=character(0),bamFile.control=character(0),weight.control=1,feature=character(0),ranges=GRanges(),annotationFile=character(0),split.metaData=F,bigWig=F,smooth=T,description=character(0))
+
 ##' @param obj A SeqData object.
 ##' @param obj.control  Optional. A SeqData object used as a control to see differential coverage with obj.
 ##' @param bamFile The full path to the sequencing data. The data needs to be in bam file format.
@@ -42,7 +42,7 @@
 ##' 
 ##' feature=character(0),ranges=GRanges(),annotationFile=character(0),
 ##' 
-##' split.metaData=F,bigWig=F,description=character(0))}
+##' split.metaData=F,bigWig=F,smooth=T,description=character(0))}
 ##' @examples
 ##' # viewCoverage(obj)  
 ##' # viewCoverage(obj,ranges=GRanges)
@@ -75,8 +75,9 @@
 setMethod(
     f="viewCoverage",
     signature=c(obj="SeqData",obj.control="missing",bamFile="missing",bamFile.control="missing"),
-    definition=function(obj=NULL,obj.control=NULL, bamFile=character(0),bamFile.control=character(0),weight.control=1,feature=character(0),ranges=GRanges(),annotationFile=character(0),split.metaData=F,bigWig=F,description=character(0)){
+    definition=function(obj=NULL,obj.control=NULL, bamFile=character(0),bamFile.control=character(0),weight.control=1,feature=character(0),ranges=GRanges(),annotationFile=character(0),split.metaData=F,bigWig=F,smooth=T,description=character(0)){
         
+        print("Compute read coverage.")
         
         # check whether readCoverage slot is non-empty
         if (length(readCoverage(obj))==0){                   
@@ -94,7 +95,18 @@ setMethod(
             if (split.metaData==T){   
                 rangesList=split(ranges,mcols(ranges)[[1]])
             }       
-        }
+        }else {
+            ## if annotationFile are not supplied
+            ## use internal featureAnnotation
+            if(length(featureAnnotation(obj))==0){
+                obj=getFeatureAnnotation(obj)
+                ranges=featureAnnotation(obj)
+                
+            }else ranges=featureAnnotation(obj)
+             }
+        
+        
+        
         
         ## if ranges are supplied
         if (length(ranges)!=0 && split.metaData==T){            
@@ -122,6 +134,11 @@ setMethod(
             #reset ranges after intersect by .viewCov
             ranges.ints=covView$ranges
             
+            # approximate readCounts from coverage, by coverageSums/qwidth
+            readLength=if(length(readAlignment(obj))!=0)
+                mean(qwidth(readAlignment(obj))) else 100
+            
+            
             
             #if (exists("rangesList")){   
             if (split.metaData==T){
@@ -134,30 +151,43 @@ setMethod(
                 coverageSums=as.data.frame(do.call(rbind,coverageSums)) 
                 names(coverageSums)="coverageSums"
                 
+                coverageMeans=lapply(rangesList.sums,mean)            
+                coverageMeans=as.data.frame(do.call(rbind,coverageMeans)) 
+                names(coverageMeans)="coverageMeans"
+                
+                
                 # number of bases covered for each element in the rangesList
                 rangesList.width=split(unlist(width(coverageView(obj))),mcols(ranges.ints)[[1]])
-
+                
                 numBasesCovered=lapply(rangesList.width,sum)
                 numBasesCovered=as.data.frame(do.call(rbind,numBasesCovered))
                 
-                # approximate readCounts from coverage, by coverageSums/qwidth
-                readCountSums=coverageSums/mean(qwidth(readAlignment(obj)))
+                readCountSums=coverageSums/readLength
+                readCountMeans=coverageMeans/readLength
                 
-
                 #normalize to libSize, for in library comparison
                 #rpkm=.rpkm.libSize(readCountSums,libSize(obj),numBasesCovered)
                 
-                
                 #normalize to total counts, given it is total exon reads counts or total repeats read counts
-                rpkm=.rpkm(readCountSums,numBasesCovered)
+                rpkm.cov.sum=if(length(libSize(obj))!=0) 
+                    .rpkm.libSize(readCountSums,libSize(obj),numBasesCovered) else
+                        .rpkm(readCountSums,numBasesCovered)
                 
-                names(rpkm)="rpkm"
+                rpkm.cov.mean=if(length(libSize(obj))!=0) 
+                    .rpkm.libSize(readCountMeans,libSize(obj),numBasesCovered) else
+                        .rpkm(readCountMeans,numBasesCovered)
+                
+                #rpkm=.rpkm(readCountSums,numBasesCovered)
+                #names(rpkm)="rpkm"
                 
                 totalRangeNums=elementLengths(rangesList.ints)
-                coverageTable=as.matrix(cbind(coverageSums,rpkm,totalRangeNums))
+                coverageTable=as.matrix(cbind(coverageSums,rpkm.cov.sum,
+                                              coverageMeans,rpkm.cov.mean,
+                                              totalRangeNums))
                 
             }else{
                 coverageSums=unlist(viewSums(coverageView(obj)))
+                coverageMeans=unlist(viewMeans(coverageView(obj)))
                 maxHeight=unlist(viewMaxs(coverageView(obj)))
                 maxPosition=unlist(viewWhichMaxs(coverageView(obj)))
                 
@@ -170,33 +200,48 @@ setMethod(
                 # number of bases covered for each range in ranges
                 numBasesCovered=unlist(width(ranges(coverageView(obj))))
                 
-                # approximate readCounts from coverage, by coverageSums/qwidth
-                readCountSums=coverageSums/mean(qwidth(readAlignment(obj)))
-                rpkm=.rpkm.libSize(readCountSums,libSize(obj),numBasesCovered)
-                coverageTable=as.matrix(cbind(chromosome,start,end,maxPosition,maxHeight,coverageSums,rpkm,metaData))
+                readCountSums=coverageSums/readLength
+                readCountMeans=coverageMeans/readLength
                 
+                rpkm.cov.sum=if(length(libSize(obj))!=0) 
+                    .rpkm.libSize(readCountSums,libSize(obj),numBasesCovered) else
+                        .rpkm(readCountSums,numBasesCovered)
                 
+                rpkm.cov.mean=if(length(libSize(obj))!=0) 
+                    .rpkm.libSize(readCountMeans,libSize(obj),numBasesCovered) else
+                        .rpkm(readCountMeans,numBasesCovered)
+                
+                coverageTable=as.matrix(cbind(chromosome,start,end,maxPosition,maxHeight,coverageSums,rpkm.cov.sum,coverageMeans,rpkm.cov.mean,metaData))           
             }
-
+            
+            # }
+            
+            ## output mandatory csv file
+            #if (exists("coverageTable")) {
+                cat("Output coverageView ...","\n")
+                fileName=paste("coverageTable-",description,"-",.timeStamp(bamFile(obj)),".csv",sep="")
+                write.csv(file=fileName,coverageTable)
+            #}
+            
         }
-
-        ## output mandatory csv file
-        if (exists("coverageTable")) {
-            cat("Output coverageView ...","\n")
-            fileName=paste("coverageTable-",description,"-",.timeStamp(bamFile(obj)),".csv",sep="")
-            write.csv(file=fileName,coverageTable)
-        }
-        
         
         ## output bigWig file
         if (bigWig==T) {
-            # smoothing with runing window average
-            cat("Smoothing readCoverage...","\n")
-            smoothedCoverage=runmean(readCoverage(obj),k=51,endrule="constant") 
+            if (smooth==T){
+                # smoothing with runing window average
+                cat("Smoothing readCoverage...","\n")
+                smoothedCoverage=runmean(readCoverage(obj),k=51,endrule="constant") 
+                
+                cat("Output bigWig file...","\n")
+                fileName=paste("bigWig-",description,"-",.timeStamp(bamFile(obj)),".bigWig", sep="")
+                export(smoothedCoverage,fileName)
+                
+            }else{
+                cat("Output bigWig file...","\n")
+                fileName=paste("bigWig-",description,"-",.timeStamp(bamFile(obj)),".bigWig", sep="")
+                export(readCoverage(obj),fileName)
+            }
             
-            cat("Output bigWig file...","\n")
-            fileName=paste("bigWig-",description,"-",.timeStamp(bamFile(obj)),".bigWig", sep="")
-            export(smoothedCoverage,fileName)
             
         }
         
@@ -210,7 +255,7 @@ setMethod(
 setMethod(
     f="viewCoverage",
     signature=c(obj="missing",obj.control="missing",bamFile="character",bamFile.control="missing"),
-    definition=function(obj=NULL,obj.control=NULL, bamFile=character(0),bamFile.control=character(0),weight.control=1,feature=character(0),ranges=GRanges(),annotationFile=character(0),split.metaData=F,bigWig=F,description=character(0)) {
+    definition=function(obj=NULL,obj.control=NULL, bamFile=character(0),bamFile.control=character(0),weight.control=1,feature=character(0),ranges=GRanges(),annotationFile=character(0),split.metaData=F,bigWig=F,smooth=T,description=character(0)) {
         
         obj=new("SeqData",bamFile=bamFile)               
         obj=viewCoverage(obj,bigWig=bigWig,description=description)         
@@ -225,7 +270,7 @@ setMethod(
 setMethod(
     f="viewCoverage",
     signature=c(obj="SeqData",obj.control="SeqData", bamFile="missing",bamFile.control="missing"),
-    definition=function(obj=NULL,obj.control=NULL, bamFile=character(0),bamFile.control=character(0),weight.control=1,feature=character(0),ranges=GRanges(),annotationFile=character(0),split.metaData=F,bigWig=F,description=character(0)){
+    definition=function(obj=NULL,obj.control=NULL, bamFile=character(0),bamFile.control=character(0),weight.control=1,feature=character(0),ranges=GRanges(),annotationFile=character(0),split.metaData=F,bigWig=F,smooth=T,description=character(0)){
         
         # exclude input of feature,ranges,annotationFile or split.metaData
         if (length(feature)!=0 || length(ranges)!=0 || length(annotationFile)!=0||split.metaData==T){
@@ -247,7 +292,7 @@ setMethod(
         chipSet=.samplingNorm(obj,obj.control)
         obj=chipSet$chip
         obj.control=chipSet$control
-
+        
         # compute differential coverage
         if (weight.control!=1) {
             cat("Computing differential coverage, weight.control=",weight.control,"\n")
@@ -259,7 +304,7 @@ setMethod(
         diffCov=readCoverage(obj)-readCoverage(obj.control)*weight.control
         # identical to
         # diffCov=readCoverage(obj)-readCoverage(obj.control,weight=weight.control)
-
+        
         # set obj coverage slot to diffCov
         readCoverage(obj)=diffCov
         
@@ -272,7 +317,7 @@ setMethod(
 setMethod(
     f="viewCoverage",
     signature=c(obj="missing",obj.control="missing", bamFile="character",bamFile.control="character"),
-    definition=function(obj=NULL,obj.control=NULL, bamFile=character(0),bamFile.control=character(0),weight.control=1,feature=character(0),ranges=GRanges(),annotationFile=character(0),split.metaData=F,bigWig=F,description=character(0)){
+    definition=function(obj=NULL,obj.control=NULL, bamFile=character(0),bamFile.control=character(0),weight.control=1,feature=character(0),ranges=GRanges(),annotationFile=character(0),split.metaData=F,bigWig=F,smooth=T,description=character(0)){
         
         obj=new("SeqData",bamFile=bamFile)
         obj.control=new("SeqData",bamFile=bamFile.control)
@@ -285,29 +330,31 @@ setMethod(
 
 ##-----------------------------------------------------------------------------
 ## 
+## @export .covView  # getCoverageView or coverageView should be a function output to user as it creates a slot
+
 ## if ranges are supplied or annotationFile are supplied
 .covView=function(readCoverage,ranges){
-
-        cat("Computing coverageView on ranges\n")
-        # matching chr names and chr number in the readAlignment
-        # and featureAnnotation "GRanges"
-        intersect=intersectChr(readCoverage,ranges)        
-        readCoverage=intersect$reads        
-        ranges=intersect$features
-        
-        #create coverageView, "view on coverage at ranges"
-        chrl=seqlevels(ranges)        
-        rangesList=split(ranges,seqnames(ranges))        
-        coverageView=RleViewsList(sapply(chrl,function(chr){
-            Views(readCoverage[[chr]],
-                  start=start(rangesList)[[chr]],
-                  end=end(rangesList)[[chr]])
-        }))
-        
-        covView=list(coverageView=coverageView,ranges=ranges)
-        return(covView)
-}
     
+    cat("Computing coverageView on ranges\n")
+    # matching chr names and chr number in the readAlignment
+    # and featureAnnotation "GRanges"
+    intersect=intersectChr(readCoverage,ranges)        
+    readCoverage=intersect$reads        
+    ranges=intersect$features
+    
+    #create coverageView, "view on coverage at ranges"
+    chrl=seqlevels(ranges)        
+    rangesList=split(ranges,seqnames(ranges))        
+    coverageView=RleViewsList(sapply(chrl,function(chr){
+        Views(readCoverage[[chr]],
+              start=start(rangesList)[[chr]],
+              end=end(rangesList)[[chr]])
+    }))
+    
+    covView=list(coverageView=coverageView,ranges=ranges)
+    return(covView)
+}
+
 
 ##-----------------------------------------------------------------------------
 ## 

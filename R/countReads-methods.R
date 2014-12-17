@@ -7,18 +7,39 @@
 ##' @title countReads
 ##' @rdname countReads-methods
 ##' @docType methods
-##' @description Count reads overlap different genomic features, such as gene, transciripts, exons, promoter regions (1kb upstream and downstream of tss), or any genomic ranges of interest. It will count how many reads is mapped to each genomic feature. 
-##' @usage countReads(obj,annotationFile,countingMode,interFeature,feature) countReads(bamFile,annotationFile,countingMode,feature)
+##' @description Count reads overlap different genomic features, such as gene,
+##'   transciripts, exons, promoter regions (1kb upstream and downstream of
+##'   tss), or any genomic ranges of interest. It will count how many reads is
+##'   mapped to each genomic feature.
+##' @usage countReads(obj,annotationFile,countingMode,interFeature,feature)
+##'   countReads(bamFile,annotationFile,countingMode,feature)
 ##' @param obj A SeqData object.
-##' @param annotationFile Optional full path to annotation file.  
-##' @param countingMode Including "Union","IntersectionStrict","IntersectionNotEmpty". See summarizeOverlaps from GenomicRanges package for details.
-##' @param interFeature This parameter is accompanying countingMode. It is to decide, when multiple features overlap, and reads are mapped to that overlap regions, whether these reads should be removed using the countingMode. Default is TRUE, meaning using the countingMode to aovoid count a single reads more than once. If it is set to FALSE, read are counted to each feature they mapped to, which means they are allowed to count multiple times.
-##' @param feature Genomic features including "exon","transcript","gene","erv","tss","5LTR" (# feature=c("exon","transcript","gene","erv","tss","5LTR"))
-##' @param description Optional. User can input short desciption for the output file, it will show up in the file name of the output file. 
-##' @details This function answers how to assign reads to features that are overlapped. The advantage of this function is it does not count a read twice, and it take duplicated gene into count.The back end is the function summarizeOverlaps from GenomicRanges package.
-##' @return A countTable includes feature name, read count and its rpkm normalization value.
-##' @section Usage: {countReads(obj=NULL,bamFile=character(0),annotationFile=character(0),
-##' countingMode="Union",interFeature=TRUE,feature=c("exon","transcript","gene","erv","repeats","transposon","tss","5LTR"))}
+##' @param annotationFile Optional full path to annotation file.
+##' @param countingMode Including
+##'   "Union","IntersectionStrict","IntersectionNotEmpty". See summarizeOverlaps
+##'   from GenomicRanges package for details.
+##' @param interFeature This parameter is accompanying countingMode. It is to
+##'   decide, when multiple features overlap, and reads are mapped to that
+##'   overlap regions, whether these reads should be removed using the
+##'   countingMode. Default is TRUE, meaning using the countingMode to aovoid
+##'   count a single reads more than once. If it is set to FALSE, read are
+##'   counted to each feature they mapped to, which means they are allowed to
+##'   count multiple times.
+##' @param feature Genomic features including
+##'   "exon","transcript","gene","erv","tss","5LTR" (#
+##'   feature=c("exon","transcript","gene","erv","tss","5LTR"))
+##' @param description Optional. User can input short desciption for the output
+##'   file, it will show up in the file name of the output file.
+##' @details This function answers how to assign reads to features that are
+##'   overlapped. The advantage of this function is it does not count a read
+##'   twice, and it take duplicated gene into count.The back end is the function
+##'   summarizeOverlaps from GenomicRanges package.
+##' @return A countTable includes feature name, read count and its rpkm
+##'   normalization value.
+##' @section Usage:
+##'   {countReads(obj=NULL,bamFile=character(0),annotationFile=character(0), 
+##'   countingMode="Union",interFeature=TRUE,feature=c("exon","transcript","gene","erv","repeats","transposon","tss","5LTR"))}
+##'   
 ##' @examples 
 ##' #countReads(obj)  #readAlignment and featureAnnotation slots non-empty
 ##'                   #user can pass in GAlignments(readAlignment slot) and 
@@ -39,7 +60,8 @@ setMethod(
     definition=function(
         obj,annotationFile=character(0),countingMode="Union",interFeature=TRUE,
         feature=character(0),description=character(0)){
-
+        
+        print("Compute read counts")
         # set featureAnnotation slot, based on annotationFile
         if (length(annotationFile)!=0){
             cat ("Setting up featureAnnotation slot using provided annotationFile...\n")            
@@ -132,10 +154,14 @@ setMethod(
         
         #totalRangeNums=sapply(Annot,length) # takes much longer time
         totalRangeNums=elementLengths(Annot)
-        #note copies in those chromosomes that are not specifically mapped to the finished genome (chrN_random and chrUn_random) are not counted in this way. (if set scanBamParam to include unmapped portion, those chromosome will automatically included)
+        #note copies in those chromosomes that are not specifically mapped to
+        #the finished genome (chrN_random and chrUn_random) are not counted in
+        #this way. (if set scanBamParam to include unmapped portion, those
+        #chromosome will automatically included)
         
         #if want the total copy number in the genome
-        #Annot.total=split(featureAnnotation(obj),mcols(featureAnnotation(obj))$symbol)
+        #Annot.total=split(featureAnnotation(obj),
+        #mcols(featureAnnotation(obj))$symbol)
         #totalRangeNums=sapply(Annot.total,length)
 
         #rpkm normalization

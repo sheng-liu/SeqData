@@ -10,7 +10,7 @@
 ##' @exportMethod viewCoverage
 setGeneric(
     name="viewCoverage",
-    def=function(obj=NULL,obj.control=NULL, bamFile=character(0),bamFile.control=character(0),weight.control=1,feature=character(0),ranges=GRanges(),annotationFile=character(0),split.metaData=F,bigWig=F,description=character(0)){
+    def=function(obj=NULL,obj.control=NULL, bamFile=character(0),bamFile.control=character(0),weight.control=1,feature=character(0),ranges=GRanges(),annotationFile=character(0),split.metaData=F,bigWig=F,smooth=T,description=character(0)){
         standardGeneric("viewCoverage")
     })
 
@@ -54,9 +54,28 @@ setGeneric(
 ##' @exportMethod getBaseAlignment
 setGeneric(
     name="getBaseAlignment",
-    def=function(obj,bamFile=character(0),baseReport=character(0)){
+    def=function(obj=NULL,bamFile=character(0),baseReport=character(0)){
         standardGeneric("getBaseAlignment")
     })
+
+
+##' @exportMethod summarizeBases
+setGeneric(
+    name="summarizeBases",
+    def=function(obj=NULL,bamFile=character(0),annotationFile=character(0),baseReport=charcter(0),description=character(0)){
+        standardGeneric("summarizeBases")
+    })
+
+
+##' @exportMethod getBaseScore
+setGeneric(
+    name="getBaseScore",
+    def=function(obj=NULL,bamFile=character(0),baseReport=charcter(0),FUN=.perc,output="coverage"){
+        standardGeneric("getBaseScore")
+    })
+
+
+
 
 ##------------------------------------------------------------------------------
 
@@ -207,6 +226,20 @@ setGeneric(
     name="baseAlignment",
     def=function(obj){
         standardGeneric("baseAlignment")
+    })
+
+##' @exportMethod baseScore<-
+setGeneric(
+    name="baseScore<-",
+    def=function(obj,value){
+        standardGeneric("baseScore<-")
+    })
+
+##' @exportMethod baseScore
+setGeneric(
+    name="baseScore",
+    def=function(obj){
+        standardGeneric("baseScore")
     })
 
 

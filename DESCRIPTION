@@ -1,24 +1,12 @@
-Package: SeqDataTools
+Package: SeqData
 Type: Package
-Title: three simple tools for sequencing data analysis
+Title: A data structure and four simple tools build upon it for sequencing data analysis
 Version: 1.0
 Date: 2013-03-30
 Author: Sheng Liu
 Maintainer: Sheng Liu <shengl@interchange.ubc.ca>
-Description: Three simple tools including viewCoverage, countReads, and Peaks
-    tool set (findPeaks and annotatePeaks), does exactly what the name says.
+Description: Four simple tools including viewCoverage, countReads, findPeaks
+    and annotatePeaks, does exactly what the name says.
 License: Artistic-2.0
 Depends:
-    methods,IRanges,GenomicRanges,Rsamtools,rtracklayer
-Collate:
-    'AllClasses.R'
-    'AllGenerics.R'
-    'SeqDataTools-accessors.R'
-    'SeqDataTools-helperFunctions.R'
-    'annotatePeaks-methods.R'
-    'countReads-methods.R'
-    'findPeaks-methods.R'
-    'getFeatureAnnotation.R'
-    'getReadAlignment.R'
-    'getReadCoverage.R'
-    'viewCoverage-methods.R'
+    methods,IRanges,GenomicAlignments,GenomicRanges,Rsamtools,rtracklayer

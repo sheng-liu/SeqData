@@ -58,11 +58,11 @@
 ##' @import dplyr
 # library needed:
 library(methods)
-library(IRanges)
-library(GenomicRanges)
+#library(IRanges)
+#library(GenomicRanges)
 library(Rsamtools)
 library(rtracklayer)
-library(dplyr)
+# library(dplyr)
 
 
 

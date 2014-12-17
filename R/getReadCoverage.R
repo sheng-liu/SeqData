@@ -4,6 +4,8 @@
 ###############################################################################
 
 
+## many of the dispatch here can be removed, user would only use either SeqData with bamFile filled, or a bamFile itself. nobody is going to use an empty SeqData,BamFile, or to say, the author shouldn't encourage this usage. 
+
 # usage
 
 # getReadCoverage(bamFile)

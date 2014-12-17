@@ -504,6 +504,25 @@ df2gr=function(df,chr=T,MT=T){
 }
 
 
+# the names of seqlengths(aln) is lost when called using lapply function, it is
+# passed in as a second variable for lapply function
+# bin.size in bp
+
+##' @export .bins
+.bins=function(bin.size,granges=T){
+    SEQLEN=.seqlengths()
+    bins <- GRangesList(
+        lapply(SEQLEN,function(seqlen,seqlen.name) {
+            GRanges(
+                ranges=IRanges(breakInChunks(seqlen,bin.size)), 
+                seqnames=Rle(seqlen.name[which(SEQLEN==seqlen)],length(ranges)),    
+                strand=Rle("*",length(ranges)),
+                seqlengths=SEQLEN[which(SEQLEN==seqlen)]
+            )},names(SEQLEN))
+    )
+    if(granges) bins=unlist(bins,use.names=FALSE)
+    return(bins)
+}
 
 
 
