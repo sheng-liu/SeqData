@@ -4,33 +4,53 @@
 \alias{countReads}
 \title{countReads}
 \usage{
-countReads(obj,annotationFile,countingMode,interFeature,feature) countReads(bamFile,annotationFile,countingMode,feature)
+countReads(obj,annotationFile,countingMode,interFeature,feature)
+  countReads(bamFile,annotationFile,countingMode,feature)
 }
 \arguments{
 \item{obj}{A SeqData object.}
 
 \item{annotationFile}{Optional full path to annotation file.}
 
-\item{countingMode}{Including "Union","IntersectionStrict","IntersectionNotEmpty". See summarizeOverlaps from GenomicRanges package for details.}
+\item{countingMode}{Including
+"Union","IntersectionStrict","IntersectionNotEmpty". See summarizeOverlaps
+from GenomicRanges package for details.}
 
-\item{interFeature}{This parameter is accompanying countingMode. It is to decide, when multiple features overlap, and reads are mapped to that overlap regions, whether these reads should be removed using the countingMode. Default is TRUE, meaning using the countingMode to aovoid count a single reads more than once. If it is set to FALSE, read are counted to each feature they mapped to, which means they are allowed to count multiple times.}
+\item{interFeature}{This parameter is accompanying countingMode. It is to
+decide, when multiple features overlap, and reads are mapped to that
+overlap regions, whether these reads should be removed using the
+countingMode. Default is TRUE, meaning using the countingMode to aovoid
+count a single reads more than once. If it is set to FALSE, read are
+counted to each feature they mapped to, which means they are allowed to
+count multiple times.}
 
-\item{feature}{Genomic features including "exon","transcript","gene","erv","tss","5LTR" (# feature=c("exon","transcript","gene","erv","tss","5LTR"))}
+\item{feature}{Genomic features including
+"exon","transcript","gene","erv","tss","5LTR" (#
+feature=c("exon","transcript","gene","erv","tss","5LTR"))}
 
-\item{description}{Optional. User can input short desciption for the output file, it will show up in the file name of the output file.}
+\item{description}{Optional. User can input short desciption for the output
+file, it will show up in the file name of the output file.}
 }
 \value{
-A countTable includes feature name, read count and its rpkm normalization value.
+A countTable includes feature name, read count and its rpkm
+  normalization value.
 }
 \description{
-Count reads overlap different genomic features, such as gene, transciripts, exons, promoter regions (1kb upstream and downstream of tss), or any genomic ranges of interest. It will count how many reads is mapped to each genomic feature.
+Count reads overlap different genomic features, such as gene,
+  transciripts, exons, promoter regions (1kb upstream and downstream of
+  tss), or any genomic ranges of interest. It will count how many reads is
+  mapped to each genomic feature.
 }
 \details{
-This function answers how to assign reads to features that are overlapped. The advantage of this function is it does not count a read twice, and it take duplicated gene into count.The back end is the function summarizeOverlaps from GenomicRanges package.
+This function answers how to assign reads to features that are
+  overlapped. The advantage of this function is it does not count a read
+  twice, and it take duplicated gene into count.The back end is the function
+  summarizeOverlaps from GenomicRanges package.
 }
 \section{Usage}{
- {countReads(obj=NULL,bamFile=character(0),annotationFile=character(0),
-countingMode="Union",interFeature=TRUE,feature=c("exon","transcript","gene","erv","repeats","transposon","tss","5LTR"))}
+
+  {countReads(obj=NULL,bamFile=character(0),annotationFile=character(0),
+  countingMode="Union",interFeature=TRUE,feature=c("exon","transcript","gene","erv","repeats","transposon","tss","5LTR"))}
 }
 \examples{
 #countReads(obj)  #readAlignment and featureAnnotation slots non-empty

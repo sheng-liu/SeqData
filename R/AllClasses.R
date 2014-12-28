@@ -48,14 +48,18 @@
 ##' 
 ##' @section Usage:{SeqData(bamFile=character(0),annotationFile=character(0))} 
 ##' @examples
-##' ## x=SeqData(bamFile="bamFileLocation",annotationFile="annotationFileLocation")
+##' ## seq=SeqData(bamFile="bamFileLocation",annotationFile="annotationFileLocation")
 ##' @seealso
 ##' See corresponding function documentation for details.
 
 
 ##' @import IRanges
 ##' @import GenomicRanges
-##' @import dplyr
+##' 
+## dplyr has masked  intersect, setdiff, setequal, union from base and other packages, try to use importFrom instead of import package
+##' @importFrom dplyr summarise group_by select
+##' 
+##' 
 # library needed:
 library(methods)
 #library(IRanges)
@@ -65,6 +69,22 @@ library(rtracklayer)
 # library(dplyr)
 
 
+# .onLoad <- function(SeqData,Seqata) {
+#     cat("message from .onLoad via cat\n")
+#     message("message from .onLoad via message")
+#     packageStartupMessage("message from .onLoad via
+# packageStartupMessage\n")
+# }
+
+## .onLoad, .onUnload, .onAttach and .onDetach are looked for as internal objects in the namespace and should not be exported
+
+.onLoad <- function(SeqData,Seqata) {
+    packageStartupMessage("Loading package SeqData")
+}
+
+.onAttach <- function(SeqData,Seqata) {
+    packageStartupMessage("Done")
+}
 
 # Class
 ##' @exportClass SeqData
@@ -103,7 +123,6 @@ setClass(
 SeqData=function(bamFile=character(0),annotationFile=character(0)){
     new("SeqData",bamFile=bamFile,annotationFile=annotationFile)
 }
-
 
 
 

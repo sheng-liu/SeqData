@@ -53,7 +53,7 @@ annotatePeaks
 {SeqData(bamFile=character(0),annotationFile=character(0))}
 }
 \examples{
-## x=SeqData(bamFile="bamFileLocation",annotationFile="annotationFileLocation")
+## seq=SeqData(bamFile="bamFileLocation",annotationFile="annotationFileLocation")
 }
 \seealso{
 See corresponding function documentation for details.
