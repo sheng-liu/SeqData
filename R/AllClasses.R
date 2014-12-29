@@ -57,7 +57,7 @@
 ##' @import GenomicRanges
 ##' 
 ## dplyr has masked  intersect, setdiff, setequal, union from base and other packages, try to use importFrom instead of import package
-##' @importFrom dplyr summarise group_by select
+##' @importFrom dplyr summarise group_by select %>%
 ##' 
 ##' 
 # library needed:
@@ -79,12 +79,12 @@ library(rtracklayer)
 ## .onLoad, .onUnload, .onAttach and .onDetach are looked for as internal objects in the namespace and should not be exported
 
 .onLoad <- function(SeqData,Seqata) {
-    packageStartupMessage("Loading package SeqData")
+    packageStartupMessage("Loading package: SeqData")
 }
 
-.onAttach <- function(SeqData,Seqata) {
-    packageStartupMessage("Done")
-}
+# .onAttach <- function(SeqData,Seqata) {
+#     packageStartupMessage("Done")
+# }
 
 # Class
 ##' @exportClass SeqData

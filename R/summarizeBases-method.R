@@ -23,8 +23,8 @@
 ##'   bismark, in the form of a csv file has minimu four columns "chromosome", 
 ##'   "position", "strand", "count_methylated", "count_unmethylated". if strand information is not available, fill it with "*". 
 ##'   
-##'   Additionaly
-##'   "C_context", "trinucleotide_context". chr=chromosome,position,strand,count_methylated,count_unmethylated
+##   Additionaly
+##   "C_context", "trinucleotide_context". chr=chromosome,position,strand,count_methylated,count_unmethylated
 ##' 
 ##' @param description Optional. User can input short desciption for the output
 ##'   file, it will show up in the file name of the output file.
@@ -130,8 +130,6 @@ setMethod(
     })
     
     
-
-    
 .summarizeBases=function(regions,bases,ignore.strand=T){
     ##-----------------------------------------------------------------------
     ## grouping    
@@ -148,14 +146,17 @@ setMethod(
     # transition from GrangesList to data.frame (for faster calculation)
     ol.df=as.data.frame(ol.ls)
     
-    # element seqnames   start     end width strand meth_count unmeth_count
-    
     ##-------------------------------------------------------------------------
     ## calculate mean of groups
+    
+    # colnames(ol.df)
+    # R3.0          element seqnames start end width strand meth_count unmeth_count
+    # R3.1 group group_name seqnames start end width strand meth_count unmeth_count    
+    
     cat("Summarizing on groups...\n")
     region.summarize=ol.df %>%
-        group_by(element) %>%
-        select(element,width,meth_count,unmeth_count) %>%
+        group_by(group_name) %>%
+        select(group_name,width,meth_count,unmeth_count) %>%
         summarise(    					# British summarise
             num_cpg_site=sum(width), 	# num_cpg_site=table(element), # takes 11s
             methylated_count=sum(meth_count),
@@ -170,7 +171,7 @@ setMethod(
     regions.df=transform(regions.df,id=rownames(regions.df))
     
     # merge() only works on columns not rownames
-    region.summarize.out=merge(regions.df,region.summarize,by.x="id",by.y="element")
+    region.summarize.out=merge(regions.df,region.summarize,by.x="id",by.y="group_name")
     
     region.summarize.out$id=NULL
     names(region.summarize.out)[1]="chr"

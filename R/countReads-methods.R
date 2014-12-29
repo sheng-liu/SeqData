@@ -61,6 +61,9 @@ setMethod(
         obj,annotationFile=character(0),countingMode="Union",interFeature=TRUE,
         feature=character(0),description=character(0)){
         
+        annotationFile=annotationFile(obj)
+        bamFile=bamFile(obj)
+        
         print("Compute read counts")
         # set featureAnnotation slot, based on annotationFile
         if (length(annotationFile)!=0){

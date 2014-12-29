@@ -18,10 +18,7 @@ bam file format.}
 
 \item{baseReport}{DNA methylaton report from methylaton aligners such as
   bismark, in the form of a csv file has minimu four columns "chromosome",
-  "position", "strand", "count_methylated", "count_unmethylated". if strand information is not available, fill it with "*".
-
-  Additionaly
-  "C_context", "trinucleotide_context". chr=chromosome,position,strand,count_methylated,count_unmethylated}
+  "position", "strand", "count_methylated", "count_unmethylated". if strand information is not available, fill it with "*".}
 
 \item{description}{Optional. User can input short desciption for the output
   file, it will show up in the file name of the output file.}
